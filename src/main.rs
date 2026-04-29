@@ -36,7 +36,7 @@
 //!     
 //!     Es:
 //!     
-//!         - lib/flavors/main_tca.dart
+//!         - lib/flavors/main_xxx.dart
 //!
 //! - I file `supply.json` per fastlane in presenza dei flavor vanno messi in android/supply_{flavor}.json
 //!     
