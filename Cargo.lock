@@ -343,7 +343,7 @@ dependencies = [
 
 [[package]]
 name = "f-run"
-version = "1.5.0+2026051400"
+version = "1.0.0+2026051800"
 dependencies = [
  "comfy-table",
  "crossterm",

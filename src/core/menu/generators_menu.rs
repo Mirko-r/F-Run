@@ -34,7 +34,7 @@ pub fn show_generators_menu() -> GeneratorsActions {
         if cfg.features.flutter_native_splash {
             items.push(("Splash", GeneratorsActions::Splash));
         }
-        if cfg.features.katana.enabled {
+        if cfg.features.katana.enabled || cfg.features.easy_localization.enabled {
             items.push(("Lingue", GeneratorsActions::Language));
         }
         items.push(("Indietro", GeneratorsActions::Exit));

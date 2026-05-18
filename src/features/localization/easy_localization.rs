@@ -918,10 +918,7 @@ fn generate_locale_files(translations_dir: &Path) {
     let files_exist = codegen_loader_path.exists();
 
     if loader_ok && files_exist {
-        ok(
-            "Generazione completata: lib/generated/codegen_loader.g.dart",
-            false,
-        );
+        ok("Generazione completata: lib/generated/codegen_loader.g.dart");
     } else {
         warn(
             "Generazione easy_localization incompleta: verifica source path e file codegen_loader.g.dart in lib/generated/.",
@@ -947,7 +944,7 @@ pub fn gen_language_easy() {
         return;
     }
 
-    ok("Lingue riconosciute:", false);
+    ok("Lingue riconosciute:");
     for lang in &langs {
         println!("-> {lang}");
     }
@@ -963,7 +960,7 @@ pub fn gen_language_easy() {
             "Nessuna stringa 'fr:' trovata nel codice Dart. Procedo con sync chiavi dai JSON esistenti.",
         );
     } else {
-        ok(&format!("Stringhe trovate : {}", fr_strings.len()), false);
+        ok(&format!("Stringhe trovate : {}", fr_strings.len()));
         for (text, source) in &fr_strings {
             println!("-> {text} ({source})");
         }
@@ -982,10 +979,9 @@ pub fn gen_language_easy() {
     }
 
     let source_lang = select_source_language(&langs, &all_lang_maps);
-    ok(
-        &format!("Lingua sorgente selezionata per il sync: {source_lang}"),
-        false,
-    );
+    ok(&format!(
+        "Lingua sorgente selezionata per il sync: {source_lang}"
+    ));
 
     let source_by_key = build_source_by_key(
         &all_keys,
@@ -1030,24 +1026,18 @@ pub fn gen_language_easy() {
 
     progress_bar.finish_with_message("Sincronizzazione completata");
 
-    ok(
-        &format!(
-            "Sync completata: {} chiavi totali, {} inserimenti nei JSON.",
-            all_keys.len(),
-            total_inserted
-        ),
-        false,
-    );
+    ok(&format!(
+        "Sync completata: {} chiavi totali, {} inserimenti nei JSON.",
+        all_keys.len(),
+        total_inserted
+    ));
 
     let replaced = replace_fr_strings_with_locale_keys(lib_dir, &it_to_key);
     if replaced > 0 {
-        ok(
-            &format!(
-                "Sostituzione completata: {} occorrenze convertite in LocaleKeys.*.tr().",
-                replaced
-            ),
-            false,
-        );
+        ok(&format!(
+            "Sostituzione completata: {} occorrenze convertite in LocaleKeys.*.tr().",
+            replaced
+        ));
     } else {
         warn("Nessuna stringa fr: da sostituire nei file Dart.");
     }

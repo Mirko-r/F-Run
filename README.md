@@ -23,7 +23,7 @@ F-Run scansiona il progetto e popola `frun.yaml` con informazioni rilevate autom
 - **Supporto iOS** da `ios/Runner/Info.plist`
 - **Fastlane** da `android/Fastfile`
 - **Shorebird** da `shorebird.yaml`
-- **Supporto generatori** da `pubspec.yaml` per `icons_launcher`, `flutter_native_splash`, `katana_localization`
+- **Supporto generatori** da `pubspec.yaml` per `icons_launcher`, `flutter_native_splash`, `katana_localization`, `easy_localization`
 
 ### 📦 Build multipiattaforma
 - **Android APK**: build dell’APK standard
@@ -35,7 +35,7 @@ F-Run scansiona il progetto e popola `frun.yaml` con informazioni rilevate autom
 ### 🎯 Generazione di asset e localizzazioni
 - **Icone**: `icons_launcher:create` con config in `assets/icons/` o `assets/{flavor}/icons/`
 - **Splash screen**: `flutter_native_splash:create` con config in `assets/icons/` o `assets/{flavor}/icons/`
-- **Localizzazioni Katana**: generazione con `katana_localization` quando attivo e configurato
+- **Localizzazioni**: generazione con `katana_localization` oppure con `easy_localization`, in base alle dipendenze rilevate
 
 ### 🚀 Integrazioni esterne
 - **Fastlane**: supporto Android + iOS con flusso basato su `android/fastlane/Appfile` e `supply_{flavor}.json`
@@ -139,6 +139,8 @@ features:
   katana:
     enabled: true                         # Rilevato: katana_localization in pubspec.yaml
     language_path: "lib/language.dart"    # Path del file di lingua (se Katana attivo)
+  easy_localization:
+    enabled: false                        # Rilevato: easy_localization in pubspec.yaml
 
 flavors:
   enabled: true                           # Se true, la build richiede di scegliere un flavor
@@ -156,7 +158,7 @@ ios:
 ### Rilevamento automatico
 
 Alla prima esecuzione, F-Run:
-1. **Legge** `pubspec.yaml` per cercare Katana, Fastlane, flutter_native_splash, icons_launcher
+1. **Legge** `pubspec.yaml` per cercare Katana, easy_localization, Fastlane, flutter_native_splash, icons_launcher
 2. **Scansiona** `android/app/src/` per trovare flavors (es. myflavor, production)
 3. **Verifica** `ios/Runner/Info.plist` per supporto iOS
 4. **Cerca** `shorebird.yaml` nella radice
@@ -236,6 +238,7 @@ project/
 | Upload App Store | ✅ | ❌ | ❌ |
 | Terminale separato (watch) | ✅ | ✅ | ⚠️ (fallback) |
 | Katana localization | ✅ | ✅ | ✅ |
+| Easy localization | ✅ | ✅ | ✅ |
 | Fastlane | ✅ | ✅ | ⚠️ (partial) |
 
 **Note**:
@@ -250,6 +253,7 @@ project/
 | Flavors Android | Legge `android/app/src/` | `enabled: false` |
 | iOS | Verifica `ios/Runner/Info.plist` | `enabled: false` |
 | Katana | Cerca `katana_localization` in `pubspec.yaml` | `enabled: false` |
+| Easy Localization | Cerca `easy_localization` in `pubspec.yaml` | `enabled: false` |
 | Icons Launcher | Cerca `icons_launcher` in `pubspec.yaml` | `enabled: false` |
 | Native Splash | Cerca `flutter_native_splash` in `pubspec.yaml` | `enabled: false` |
 | Shorebird | Verifica `shorebird.yaml` in radice | `enabled: false` |

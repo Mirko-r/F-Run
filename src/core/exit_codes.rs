@@ -30,6 +30,3 @@ pub const UIERROR: ExitCode = 6;
 
 /// Impossibile eseguire un comando
 pub const COMMANDERROR: ExitCode = 7;
-
-/// Errore HTTP
-pub const HTTPERROR: ExitCode = 8;

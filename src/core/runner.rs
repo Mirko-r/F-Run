@@ -3,7 +3,7 @@
 //! Gestisce gli errori e restituisce lo stato di successo/fallimento dei comandi.
 
 use crate::ui::printer::error;
-use std::{io, process::{Command, Output}};
+use std::process::Command;
 
 /// Esegue un comando di sistema con argomenti opzionali e directory di lavoro.
 ///
@@ -38,8 +38,6 @@ pub fn run_command(cmd: &str, args: &[&str], dir: Option<&str>) -> bool {
         }
     }
 }
-
-
 
 /// Esegue un comando in un nuovo terminale (solo macOS).
 ///
