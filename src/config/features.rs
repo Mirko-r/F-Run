@@ -16,6 +16,8 @@ pub struct FeaturesConfig {
     pub flutter_native_splash: bool,
     /// Configurazione relativa a katana
     pub katana: KatanaConfig,
+    /// Configurazione relativa a `easy_localization`
+    pub easy_localization: EasyLocalizationConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -27,14 +29,28 @@ pub struct KatanaConfig {
     pub language_path: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Struct che rappresenta la configurazione di `easy_localization`
+pub struct EasyLocalizationConfig {
+    /// Abilita la gestione delle lingue tramite `easy_localization`
+    pub enabled: bool,
+}
+
 impl FeaturesConfig {
     /// Detection automatica delle feature di localizzazione
-    pub fn detect_localization() -> KatanaConfig {
+    pub fn detect_localization() -> (KatanaConfig, EasyLocalizationConfig) {
         // Katana
         let katana_enabled = Pubspec::has_dependency("katana_localization");
-        KatanaConfig {
-            enabled: katana_enabled,
-            language_path: None,
-        }
+        // Easy Localization
+        let easy_enabled = Pubspec::has_dependency("easy_localization");
+        (
+            KatanaConfig {
+                enabled: katana_enabled,
+                language_path: None,
+            },
+            EasyLocalizationConfig {
+                enabled: easy_enabled,
+            },
+        )
     }
 }

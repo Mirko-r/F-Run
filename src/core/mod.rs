@@ -7,6 +7,7 @@
 pub mod exit_codes;
 pub mod macros;
 pub mod menu;
+pub mod progress;
 pub mod pubspec;
 pub mod runner;
 pub mod settings;

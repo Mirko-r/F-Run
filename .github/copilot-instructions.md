@@ -75,7 +75,7 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 - `once_cell` è il meccanismo standard per stato globale lazy condiviso. Se serve nuovo stato globale, riusa questo pattern invece di creare singleton ad hoc.
 - `inquire` è lo standard per i menu interattivi testuali. Mantieni il tema condiviso e i pattern già presenti in `src/core/menu`.
 - `ratatui` è riservato alle schermate TUI strutturate; non usarlo per output semplice che può restare in `ui::printer`.
-- `reqwest` viene usato in modalità `blocking`; non introdurre async runtime o conversioni a Tokio senza richiesta esplicita.
+- `reqwest` viene usato prevalentemente in modalità `blocking`; è consentito introdurre async runtime/Tokio quando una feature lo richiede in modo esplicito (es. traduzioni automatiche o integrazioni async-only).
 - `regex-lite`, `glob`, `zip`, `comfy-table`, `figlet-rs` e `time` sono già parte del design corrente: se devi estendere funzionalità correlate, preferisci questi crate prima di aggiungerne di nuovi.
 
 ## Regole per configurazione e stato
@@ -97,9 +97,8 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 ## Target e build: regole vincolanti
 
 - Da `Cargo.toml` non emerge un target triple esplicito, quindi non hardcodare nuovi target di compilazione nel codice Rust senza richiesta esplicita.
-- Qualsiasi azione/macOS-only (es. `osascript`, Terminal.app, Homebrew, `xcrun`, `altool`) deve essere eseguita solo su macOS:
-  isola queste chiamate dietro `cfg(target_os = "macos")` oppure con guardie `cfg!` e restituisci/gestisci un fallback su Linux/Windows.
-- Se proponi portabilità multipiattaforma, trattala come estensione separata e non rompere i percorsi macOS esistenti.
+- Dal codice sorgente il tool è chiaramente **host-oriented per macOS**: usa `osascript`, Terminal.app, Homebrew, `xcrun` e workflow iOS locali. Quando modifichi il core, preserva prima di tutto il comportamento macOS esistente.
+- Se proponi portabilità multipiattaforma, trattala come estensione separata e non rompere il percorso macOS attuale.
 - Quando ti viene chiesto come compilare o verificare il progetto, considera come profilo release preferito quello definito in `Cargo.toml`:
 	- `opt-level = "z"`
 	- `lto = "fat"`
@@ -138,6 +137,7 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 
 - Non trasformare il progetto in una libreria pubblica salvo richiesta esplicita.
 - Non spostare logica di workflow in `main.rs`.
-- Non introdurre async, dependency injection, trait object o layering aggiuntivo senza un bisogno reale visibile nel codice.
+- Non introdurre dependency injection, trait object o layering aggiuntivo senza un bisogno reale visibile nel codice.
+- È consentito usare `#[tokio::main]` e un `main` async quando semplifica integrazioni async richieste dal workflow.
 - Non duplicare logica di path Flutter, flavor o ambiente già presente nei moduli `features/build`, `features/flavors` e `core/pubspec`.
 - Non aggiungere messaggi utente in inglese in nuove feature, salvo output tecnico imposto da tool esterni.

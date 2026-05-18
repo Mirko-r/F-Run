@@ -43,7 +43,7 @@ impl Default for FrunConfig {
     /// - [`FrunConfig`] con i dati di default
     fn default() -> Self {
         // Detection localizzazione
-        let katana = FeaturesConfig::detect_localization();
+        let (katana, easy_localization) = FeaturesConfig::detect_localization();
 
         let katana_language_path: Option<String> = if katana.enabled {
             search_file_in_dir(Path::new("lib"), "language.dart")
@@ -89,6 +89,7 @@ impl Default for FrunConfig {
                     enabled: katana.enabled,
                     language_path: katana_language_path,
                 },
+                easy_localization,
             },
             flavors: FlavorConfig {
                 enabled: has_flavors,

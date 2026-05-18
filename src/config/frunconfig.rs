@@ -81,5 +81,6 @@ impl FrunConfig {
         self.features.flutter_native_splash
             || self.features.icons_launcher
             || self.features.katana.enabled
+            || self.features.easy_localization.enabled
     }
 }

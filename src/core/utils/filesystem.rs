@@ -143,3 +143,20 @@ pub fn replace_in_file(path: &str, re: &Regex, replacement: &str) {
         )
     });
 }
+
+/// Raccoglie ricorsivamente tutti i file con estensione .dart in una directory.
+/// # Parametri
+/// - `dir`: directory di partenza
+/// - `out`: vettore dove accumulare i path trovati
+pub fn find_dart_files(dir: &Path, out: &mut Vec<PathBuf>) {
+    if let Ok(entries) = read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                find_dart_files(&path, out);
+            } else if path.is_file() && path.extension().is_some_and(|e| e == "dart") {
+                out.push(path);
+            }
+        }
+    }
+}
