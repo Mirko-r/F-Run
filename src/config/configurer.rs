@@ -11,7 +11,7 @@ use crate::{
         frunconfig::{CONFIG, FRUNCONFIG, FlavorConfig, FrunConfig, IosConfig},
     },
     core::{
-        exit_codes::{CONFIGERROR, IOERROR, PARSEERROR},
+        exit_codes::{IOERROR, PARSEERROR},
         pubspec::Pubspec,
         utils::{search_any_in_dir, search_file_in_dir},
     },
@@ -97,16 +97,8 @@ impl Default for FrunConfig {
             },
             ios: IosConfig {
                 enabled: has_ios,
-                app_store_acc: if has_ios {
-                    Some(String::new())
-                } else {
-                    None
-                },
-                app_store_password: if has_ios {
-                    Some(String::new())
-                } else {
-                    None
-                },
+                app_store_acc: if has_ios { Some(String::new()) } else { None },
+                app_store_password: if has_ios { Some(String::new()) } else { None },
             },
         }
     }

@@ -56,11 +56,7 @@ pub fn search_file_in_dir(dir: &Path, file: &str) -> Option<PathBuf> {
 /// # Return
 /// - `Some(PathBuf)` del file trovato.
 /// - `None` se non trovato.
-pub fn search_any_in_dir(
-    dir: &Path,
-    file: &str,
-    extension: Option<&str>,
-) -> Option<PathBuf> {
+pub fn search_any_in_dir(dir: &Path, file: &str, extension: Option<&str>) -> Option<PathBuf> {
     for entry in read_dir(dir).ok()? {
         let path: PathBuf = entry.ok()?.path();
         if path.is_file() {
@@ -86,25 +82,6 @@ pub fn search_any_in_dir(
 /// - `path`: percorso del file o pattern da spostare.
 pub fn move_to_downloads(path: &str) {
     run_command("bash", &["-c", &format!("mv -f {path} ~/Downloads")], None);
-}
-
-/// Verifica se un nome di file termina con una specifica estensione.
-///
-/// # Parametri
-/// - `name`: nome del file da verificare.
-/// - `exts`: lista di estensioni da confrontare.
-///
-/// # Return
-/// - `true` se il nome termina con una delle estensioni specificate.
-/// - `false` altrimenti.
-pub fn has_extension(name: &str, exts: &[&str]) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|ext| {
-            let ext = ext.to_ascii_lowercase();
-            exts.iter().any(|&e| e.eq_ignore_ascii_case(&ext))
-        })
 }
 
 /// Sostituisce la prima occorrenza di una regex in un file con un nuovo valore.

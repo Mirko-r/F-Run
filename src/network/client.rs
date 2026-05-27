@@ -8,14 +8,8 @@
 //! senza istanziare client propri.
 
 use regex_lite::Regex;
-use serde::de::DeserializeOwned;
-use std::{io::Write, sync::OnceLock, time::Duration};
+use std::{sync::OnceLock, time::Duration};
 use ureq::Agent;
-
-use crate::{
-    core::exit_codes::{HTTPERROR, IOERROR, PARSEERROR},
-    ui::printer::error_and_exit,
-};
 
 // Il runtime Tokio è stato rimosso.
 // Usiamo solo un Agent di ureq che gestisce il pool di connessioni in modo sincrono.
