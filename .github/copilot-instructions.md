@@ -6,23 +6,24 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 ## Ambito del progetto
 
 - Questo repository è un **binary crate CLI**, non una libreria: l'entrypoint è in `src/main.rs` e il flusso applicativo è top-down.
-- Il codice è organizzato in quattro aree fisse:
+- Il codice è organizzato in cinque aree root stabili:
 	- `src/config`: modello e persistenza di `frun.yaml`, inizializzazione globale, feature detection.
 	- `src/core`: servizi condivisi, runner comandi, parser `pubspec`, updater, codici di uscita, utility e menu.
-	- `src/features`: workflow operativi Flutter/Android/iOS, build, fastlane, shorebird, generatori, analisi.
+	- `src/features`: workflow operativi Flutter/Android/iOS, build, fastlane, shorebird, generatori, localization e automazioni di progetto.
+	- `src/network`: accesso HTTP centralizzato e client condiviso per download, manifest remoti e traduzioni.
 	- `src/ui`: stampa terminale, TUI e orchestration dei menu.
 - Quando aggiungi una nuova responsabilità, collocala nel modulo coerente con questa struttura e registra sempre il file nel relativo `mod.rs`.
 - Evita di introdurre nuovi strati architetturali astratti o pattern enterprise: il progetto privilegia orchestrazione esplicita e funzioni piccole orientate ai workflow CLI.
 
 ## Gerarchia modulare e organizzazione dei file
 
-- Rispetta la gerarchia modulare già esistente in `src/`: il progetto separa chiaramente moduli root (`config`, `core`, `features`, `ui`) e sottomoduli verticali come `core/menu`, `features/build` e `features/analyze`.
+- Rispetta la gerarchia modulare già esistente in `src/`: il progetto separa chiaramente moduli root (`config`, `core`, `features`, `network`, `ui`) e sottomoduli verticali come `core/menu`, `core/utils`, `features/build` e `features/localization`.
 - Ogni nuova funzionalità deve nascere nel modulo di competenza. Se lo scope è nuovo e non appartiene in modo chiaro a un modulo esistente, crea un nuovo modulo dedicato invece di forzarlo in un file generico.
-- Non accorpare logiche eterogenee nello stesso file. Se un modulo cresce oltre una singola responsabilità, rifattorizzalo in directory con `mod.rs` e file separati, seguendo il pattern già presente in `src/core/menu`, `src/features/build` e `src/features/analyze`.
+- Non accorpare logiche eterogenee nello stesso file. Se un modulo cresce oltre una singola responsabilità, rifattorizzalo in directory con `mod.rs` e file separati, seguendo il pattern già presente in `src/core/menu`, `src/core/utils`, `src/features/build` e `src/features/localization`.
 - Mantieni la granularità attuale: un file per orchestrazione, un file per responsabilità operativa specifica, un file per tipi o helper specializzati quando servono. Evita file-monolite che mescolano menu, shell runner, parsing, build e UI.
 - Non creare moduli “misc”, “helpers” o “common” come contenitori indistinti. Se una responsabilità non è chiaramente localizzabile, prima chiarisci lo scope e poi scegli il modulo corretto.
 - Quando trasformi un file in una directory modulare, preserva nomi e responsabilità espliciti. Esempio di pattern corretto già presente: `features/build/builder.rs` come orchestratore, con implementazioni di piattaforma in `features/build/android.rs` e `features/build/ios.rs`.
-- Mantieni separata la logica di UI dalla logica operativa: menu, rendering e stampa restano sotto `ui` o `core/menu`; workflow Flutter, analisi e deploy restano sotto `features`; servizi condivisi restano sotto `core`; stato/configurazione restano sotto `config`.
+- Mantieni separata la logica di UI dalla logica operativa: menu, rendering e stampa restano sotto `ui` o `core/menu`; workflow Flutter, localization e deploy restano sotto `features`; servizi condivisi restano sotto `core`; accesso HTTP e download restano sotto `network`; stato/configurazione restano sotto `config`.
 
 ## Visibilità e separazione logica
 
@@ -36,17 +37,20 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 ## Pattern concreti da seguire
 
 - Usa `src/features/build` come riferimento per una feature verticale ben separata: `builder.rs` orchestra il flusso, mentre `android.rs` e `ios.rs` contengono implementazioni di piattaforma specializzate.
-- Usa `src/features/analyze` come riferimento per moduli orientati a un dominio specifico: `analysis.rs`, `package_analysis.rs` e `category_state.rs` separano orchestrazione, tipi di analisi e stato categoriale invece di concentrare tutto in un unico file.
+- Usa `src/features/localization` come riferimento per moduli orientati a un dominio specifico: `localize.rs` orchestra il flusso, mentre `easy_localization.rs` e `katana.rs` contengono implementazioni specializzate per i diversi sistemi di localizzazione.
 - Usa `src/core/menu` come riferimento per la suddivisione della CLI interattiva: `menus.rs` contiene le primitive di selezione, `main_menu.rs` e `generators_menu.rs` gestiscono flussi diversi, `menu_theme.rs` isola il tema grafico.
+- Usa `src/core/utils` come riferimento per utility verticali condivise ma non UI: `filesystem.rs`, `dependency_checks.rs`, `command_availability.rs` e `android_artifacts.rs` restano vicine al dominio operativo senza gonfiare `core/mod.rs`.
 - Usa `src/config` come riferimento per separare modello e logica: `frunconfig.rs` definisce i tipi e lo stato globale, `configurer.rs` contiene inizializzazione, load, save e reload, `features.rs` isola le feature configurabili.
+- Usa `src/network` come riferimento per l'accesso HTTP: `client.rs` centralizza download, parsing JSON remoto e traduzioni, evitando client duplicati nei moduli chiamanti.
 - Usa `src/ui` come riferimento per la separazione del rendering: `printer.rs` gestisce output testuale e notifiche, `tui.rs` la UI strutturata, `menu_runner.rs` l'orchestrazione del loop utente, `colors.rs` le costanti visive.
 
 ## Anti-pattern da evitare
 
 - Non aggiungere nuove build Flutter direttamente in `src/features/mod.rs` o `src/main.rs`: devono restare sotto `src/features/build` o in un nuovo sottomodulo verticale equivalente.
 - Non inserire parsing YAML, accesso a `frun.yaml` o feature detection dentro `src/ui` o `src/features`: queste responsabilità restano nel layer `src/config`.
-- Non mettere codice di stampa terminale, notifiche o scelta menu dentro i moduli di build, fastlane, shorebird o analyze oltre al minimo necessario per orchestrare il workflow.
+- Non mettere codice di stampa terminale, notifiche o scelta menu dentro i moduli di build, fastlane, shorebird o localization oltre al minimo necessario per orchestrare il workflow.
 - Non usare file generici per accorpare utility non correlate. Se una nuova utility serve solo alla build Android, deve stare vicino a `src/features/build/android.rs`, non in un contenitore trasversale ambiguo.
+- Non creare client HTTP, download helper o parsing di risposte remote dentro `core`, `features` o `ui`: queste responsabilità restano nel layer `src/network`.
 - Non pubblicare automaticamente ogni nuovo modulo o helper con `pub mod` o `pub fn`: esporta solo ciò che serve davvero ai moduli chiamanti già esistenti.
 
 ## Convenzioni Rust obbligatorie
@@ -72,11 +76,10 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 ## Crate e dipendenze: uso previsto
 
 - `serde` e `serde_yaml_ng` sono lo standard per configurazione e parsing YAML. Nuovi file di configurazione o campi persistenti devono integrarsi in questo stack, non introdurre parser alternativi.
-- `once_cell` è il meccanismo standard per stato globale lazy condiviso. Se serve nuovo stato globale, riusa questo pattern invece di creare singleton ad hoc.
-- `inquire` è lo standard per i menu interattivi testuali. Mantieni il tema condiviso e i pattern già presenti in `src/core/menu`.
-- `ratatui` è riservato alle schermate TUI strutturate; non usarlo per output semplice che può restare in `ui::printer`.
-- `reqwest` viene usato prevalentemente in modalità `blocking`; è consentito introdurre async runtime/Tokio quando una feature lo richiede in modo esplicito (es. traduzioni automatiche o integrazioni async-only).
-- `regex-lite`, `glob`, `zip`, `comfy-table`, `figlet-rs` e `time` sono già parte del design corrente: se devi estendere funzionalità correlate, preferisci questi crate prima di aggiungerne di nuovi.
+- `std::sync::OnceLock` è il meccanismo standard per stato globale lazy condiviso. Se serve nuovo stato globale, riusa questo pattern invece di creare singleton ad hoc.
+- `crossterm` è la base dei menu interattivi testuali e della gestione input terminale; mantieni i pattern già presenti in `src/core/menu`.
+- `ureq` è lo standard per l'accesso HTTP sincrono del progetto e deve restare centralizzato in `src/network/client.rs`.
+- `regex-lite`, `glob`, `zip`, `indicatif`, `figlet-rs`, `time` e `serde_json` sono già parte del design corrente: se devi estendere funzionalità correlate, preferisci questi crate prima di aggiungerne di nuovi.
 
 ## Regole per configurazione e stato
 
@@ -102,8 +105,8 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 - Quando ti viene chiesto come compilare o verificare il progetto, considera come profilo release preferito quello definito in `Cargo.toml`:
 	- `opt-level = "z"`
 	- `lto = "fat"`
-	- `codegen-units = 2`
-	- `strip = "symbols"`
+	- `codegen-units = 1`
+	- `strip = true`
 	- `panic = "abort"`
 	- `debug = false`
 	- `incremental = false`
@@ -140,4 +143,5 @@ Queste istruzioni valgono per tutto il lavoro futuro sul core Rust in `src/` e d
 - Non introdurre dependency injection, trait object o layering aggiuntivo senza un bisogno reale visibile nel codice.
 - È consentito usare `#[tokio::main]` e un `main` async quando semplifica integrazioni async richieste dal workflow.
 - Non duplicare logica di path Flutter, flavor o ambiente già presente nei moduli `features/build`, `features/flavors` e `core/pubspec`.
+- Non duplicare logica HTTP o parsing di risposte remote già presente in `network/client.rs`.
 - Non aggiungere messaggi utente in inglese in nuove feature, salvo output tecnico imposto da tool esterni.

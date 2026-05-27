@@ -35,7 +35,7 @@ use crate::{
 /// - Termina il programma se account e password per ios non sono impostati (solo se iOS è abilitato)
 pub fn run_fastlane() {
     if let Some(cfg) = FrunConfig::get() {
-        let os: usize = show_os_menu(cfg.ios.eabled);
+        let os: usize = show_os_menu(cfg.ios.enabled);
 
         if os == 3 {
             return;

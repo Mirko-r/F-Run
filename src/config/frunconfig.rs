@@ -1,15 +1,14 @@
 //! Contiene la configurazione globale.
 //!
 //! La configurazione viene letta da un file YAML (`frun.yaml`) e memorizzata
-//! nella variabile statica [`CONFIG`] tramite [`once_cell::sync::OnceCell`].
+//! nella variabile statica [`CONFIG`] tramite [`std::sync::OnceLock`].
 //!
 //! Fornisce una struct [`FrunConfig`] che contiene tutte le opzioni configurabili
 //! dell'applicazione, come il supporto per Shorebird, gestione icone/splash,
 //! flavors, percorsi delle lingue e credenziali per App Store.
 
-use std::sync::{RwLock, RwLockReadGuard};
+use std::sync::{OnceLock, RwLock, RwLockReadGuard};
 
-use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -17,7 +16,7 @@ use crate::{
 };
 
 /// Configurazione globale accessibile in tutta l'app.
-pub static CONFIG: OnceCell<RwLock<FrunConfig>> = OnceCell::new();
+pub static CONFIG: OnceLock<RwLock<FrunConfig>> = OnceLock::new();
 
 /// Nome del file di configurazione YAML
 pub const FRUNCONFIG: &str = "frun.yaml";
@@ -46,7 +45,7 @@ pub struct FlavorConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IosConfig {
     /// Indica se il progetto include iOS
-    pub eabled: bool,
+    pub enabled: bool,
     /// Account App Store (per upload)
     pub app_store_acc: Option<String>,
     /// Password App Store (per upload)

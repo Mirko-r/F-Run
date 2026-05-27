@@ -11,7 +11,6 @@ use crate::{
             main_menu::{MainMenuAction, show_main_menu},
             menus::{show_adv_menu, show_build_menu, show_build_runner_menu},
         },
-        settings::open_settings,
         utils::check_dependencies,
     },
     features::{
@@ -33,7 +32,6 @@ pub fn main_menu() {
             MainMenuAction::Advanced => numeric_menu(
                 show_adv_menu,
                 &[
-                    Box::new(open_settings),
                     Box::new(install_shorebird),
                     Box::new(check_dependencies),
                 ],

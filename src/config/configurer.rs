@@ -19,13 +19,13 @@ use crate::{
     ui::printer::error_and_exit,
 };
 
-use serde_yaml_ng::{from_str, to_string};
+use serde_yaml_ng::to_string;
 
 use std::{
     env::current_dir,
-    fs::{read_to_string, remove_file, write},
+    fs::{remove_file, write},
     path::Path,
-    sync::{RwLock, RwLockWriteGuard},
+    sync::RwLock,
 };
 
 // Config globale
@@ -96,7 +96,7 @@ impl Default for FrunConfig {
                 list: flavors,
             },
             ios: IosConfig {
-                eabled: has_ios,
+                enabled: has_ios,
                 app_store_acc: if has_ios {
                     Some(String::new())
                 } else {
@@ -162,57 +162,5 @@ impl FrunConfig {
                 IOERROR,
             )
         });
-    }
-
-    /// Ricarica la configurazione da file, sovrascrivendo quella in memoria.
-    ///
-    /// Utile dopo modifiche manuali a `frun.yaml` o script esterni.
-    ///
-    /// # Panics
-    /// - Termina il programma se non è possibile ottenere la configurazione
-    /// - Termina il programma se non è possibile ottenere il write lock per la configurazione
-    pub fn reload() -> Result<(), Box<dyn std::error::Error>> {
-        // Controlla che CONFIG sia inizializzato
-        let cfg_lock = CONFIG
-            .get()
-            .ok_or("CONFIG non inizializzata")
-            .unwrap_or_else(|e| {
-                error_and_exit(
-                    &format!("Impossibile ottenere la configurazione: {e}"),
-                    CONFIGERROR,
-                )
-            });
-
-        // Carica i nuovi dati da file
-        let new_cfg = Self::load();
-
-        // Ottieni il write lock e aggiorna il contenuto
-        {
-            let mut guard: RwLockWriteGuard<'_, Self> = cfg_lock
-                .write()
-                .map_err(|_| "Impossibile prendere il write lock su CONFIG")?;
-            *guard = new_cfg;
-        }
-
-        Ok(())
-    }
-
-    /// Carica la configurazione dal file `frun.yaml`.
-    ///
-    ///
-    /// # Panics
-    /// - Termina il processo se il file di configurazione non esiste.
-    /// - Termina il processo se il parsing YAML fallisce.
-    pub fn load() -> Self {
-        let content = read_to_string(FRUNCONFIG).unwrap_or_else(|e| {
-            error_and_exit(&format!("Impossibile leggere {FRUNCONFIG}: {e}"), IOERROR)
-        });
-
-        from_str(&content).unwrap_or_else(|e| {
-            error_and_exit(
-                &format!("Impossibile effettuare il parsing di {FRUNCONFIG}: {e}"),
-                PARSEERROR,
-            )
-        })
     }
 }

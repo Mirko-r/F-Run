@@ -90,7 +90,7 @@ pub fn clean_project(force: bool) {
         try_run!("flutter", &["pub", "cache", "repair"], None);
 
         if let Some(cfg) = FrunConfig::get()
-            && cfg.ios.eabled
+            && cfg.ios.enabled
         {
             println!("{GREEN}🍎 Pulizia della cartella iOS... 🍎{RESET}");
             try_run!("rm", &["-rf", "Podfile.lock"], Some("ios"));

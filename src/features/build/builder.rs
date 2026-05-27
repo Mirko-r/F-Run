@@ -33,7 +33,7 @@ pub fn run_build(dev: bool) {
     let environment: &str = if dev { "development" } else { "production" };
 
     if let Some(cfg) = FrunConfig::get() {
-        let os: usize = show_os_menu(cfg.ios.eabled);
+        let os: usize = show_os_menu(cfg.ios.enabled);
 
         if os == 3 {
             return;

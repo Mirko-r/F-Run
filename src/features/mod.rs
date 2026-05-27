@@ -4,7 +4,6 @@
 //! dei tool esterni, build dei progetti Flutter e deployment.
 //! Fornisce wrapper e utility per automatizzare operazioni comuni.
 
-pub mod analyze;
 pub mod build;
 pub mod fastlane;
 pub mod flavors;

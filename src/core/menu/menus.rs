@@ -35,7 +35,6 @@ pub fn show_flavors_menu(items: &[String]) -> usize {
 pub fn show_adv_menu() -> usize {
     build_menu(
         &[
-            "Gestione funzionalità",
             "Installa shorebird",
             "Controllo dipendenze",
             "Indietro",

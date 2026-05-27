@@ -47,6 +47,7 @@
 mod config;
 mod core;
 mod features;
+mod network;
 mod ui;
 
 use std::env::args;

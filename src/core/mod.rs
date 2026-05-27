@@ -10,5 +10,4 @@ pub mod menu;
 pub mod progress;
 pub mod pubspec;
 pub mod runner;
-pub mod settings;
 pub mod utils;

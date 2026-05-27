@@ -10,6 +10,7 @@ use crate::{
         exit_codes, progress::create_progress_bar, runner::run_command,
         utils::filesystem::find_dart_files,
     },
+    network::client as network_client,
     ui::printer::{error_and_exit, ok, warn},
 };
 use indicatif::ProgressBar;
@@ -22,8 +23,6 @@ use std::{
     io::{BufRead, BufReader},
     path::Path,
 };
-use tokio::runtime::Builder;
-use translators::{GoogleTranslator, Translator};
 
 /// Collezione delle occorrenze `fr:` trovate nei file Dart con relativo sorgente.
 type FrOccurrences = Vec<(String, String)>;
@@ -654,8 +653,6 @@ fn langsource_for_key(key: &str, all_lang_maps: &AllLangMaps) -> Option<Translat
 fn translate_value(
     lang: &str,
     source: &TranslationSource,
-    runtime: Option<&tokio::runtime::Runtime>,
-    google_translator: &GoogleTranslator,
     translation_cache: &mut TranslationCache,
     key: &str,
     progress_bar: Option<&ProgressBar>,
@@ -669,7 +666,7 @@ fn translate_value(
 
     let Some(target_lang) = normalize_target_lang(lang) else {
         warn(&format!(
-            "Lingua {lang} non mappata per translators: uso lingua sorgente {}.",
+            "Lingua {lang} non mappata per la traduzione: uso lingua sorgente {}.",
             source.lang
         ));
         if let Some(pb) = progress_bar {
@@ -680,7 +677,7 @@ fn translate_value(
 
     let Some(source_lang) = normalize_target_lang(&source.lang) else {
         warn(&format!(
-            "Lingua sorgente {} non mappata per translators sulla chiave {key}: uso testo originale.",
+            "Lingua sorgente {} non mappata per la traduzione sulla chiave {key}: uso testo originale.",
             source.lang
         ));
         if let Some(pb) = progress_bar {
@@ -701,28 +698,17 @@ fn translate_value(
         return cached.clone();
     }
 
-    let Some(rt) = runtime else {
-        if let Some(pb) = progress_bar {
-            pb.inc(1);
-        }
-        return source.value.clone();
-    };
-
-    match rt.block_on(async {
-        google_translator
-            .translate_async(&source.value, source_lang, target_lang)
-            .await
-    }) {
-        Ok(value) => {
+    match network_client::google_translate(&source.value, source_lang, target_lang) {
+        Some(value) => {
             translation_cache.insert(cache_key, value.clone());
             if let Some(pb) = progress_bar {
                 pb.inc(1);
             }
             value
         }
-        Err(e) => {
+        None => {
             warn(&format!(
-                "Traduzione fallita da {} a {lang} (chiave {key}): {e}. Uso testo sorgente.",
+                "Traduzione fallita da {} a {lang} (chiave {key}). Uso testo sorgente.",
                 source.lang
             ));
             if let Some(pb) = progress_bar {
@@ -757,8 +743,6 @@ fn sync_language_file(
     all_keys: &BTreeSet<String>,
     source_by_key: &BTreeMap<String, TranslationSource>,
     all_lang_maps: &AllLangMaps,
-    runtime: Option<&tokio::runtime::Runtime>,
-    google_translator: &GoogleTranslator,
     translation_cache: &mut TranslationCache,
     progress_bar: Option<&ProgressBar>,
 ) -> usize {
@@ -778,15 +762,7 @@ fn sync_language_file(
                 lang: lang.to_string(),
                 value: key.clone(),
             });
-        let translated_value = translate_value(
-            lang,
-            &source,
-            runtime,
-            google_translator,
-            translation_cache,
-            key,
-            progress_bar,
-        );
+        let translated_value = translate_value(lang, &source, translation_cache, key, progress_bar);
 
         missing_key_to_value.insert(key.clone(), translated_value);
     }
@@ -990,17 +966,6 @@ pub fn gen_language_easy() {
         &source_lang,
     );
 
-    let runtime = match Builder::new_multi_thread().enable_all().build() {
-        Ok(rt) => Some(rt),
-        Err(e) => {
-            warn(&format!(
-                "Impossibile inizializzare runtime async: {e}. Uso testo sorgente come fallback."
-            ));
-            None
-        }
-    };
-
-    let google_translator = GoogleTranslator::default();
     let mut translation_cache: TranslationCache = HashMap::new();
     let total_steps = estimate_sync_steps(&langs, &all_keys, &all_lang_maps);
     let progress_bar = create_progress_bar(total_steps, None, None);
@@ -1015,8 +980,6 @@ pub fn gen_language_easy() {
             &all_keys,
             &source_by_key,
             &all_lang_maps,
-            runtime.as_ref(),
-            &google_translator,
             &mut translation_cache,
             Some(&progress_bar),
         );
@@ -1027,16 +990,16 @@ pub fn gen_language_easy() {
     progress_bar.finish_with_message("Sincronizzazione completata");
 
     ok(&format!(
-        "Sync completata: {} chiavi totali, {} inserimenti nei JSON.",
-        all_keys.len(),
-        total_inserted
+            "Sync completata: {} chiavi totali, {} inserimenti nei JSON.",
+            all_keys.len(),
+            total_inserted
     ));
 
     let replaced = replace_fr_strings_with_locale_keys(lib_dir, &it_to_key);
     if replaced > 0 {
         ok(&format!(
-            "Sostituzione completata: {} occorrenze convertite in LocaleKeys.*.tr().",
-            replaced
+                "Sostituzione completata: {} occorrenze convertite in LocaleKeys.*.tr().",
+                replaced
         ));
     } else {
         warn("Nessuna stringa fr: da sostituire nei file Dart.");

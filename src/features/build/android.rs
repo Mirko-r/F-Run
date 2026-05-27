@@ -5,7 +5,7 @@ use crate::{
         menu::menus::show_android_target_menu,
         utils::{android_bundle_path, move_to_downloads},
     },
-    features::{analyze::analysis::analyze_android_package, build::builder::build_target},
+    features::build::builder::build_target,
     ui::printer::ok,
 };
 
@@ -56,7 +56,6 @@ pub fn build_for_android(env: &str, flavor: Option<&str>) {
 fn build_apk(env: &str, flavor: Option<&str>) -> bool {
     if build_target(env, flavor, "apk") {
         let path: &str = "build/app/outputs/flutter-apk/*.apk";
-        analyze_android_package(path);
         move_to_downloads(path);
         return true;
     }
@@ -75,10 +74,7 @@ fn build_apk(env: &str, flavor: Option<&str>) -> bool {
 pub fn build_appbundle(env: &str, flavor: Option<&str>) -> bool {
     if build_target(env, flavor, "appbundle") {
         let bundle_path: String = android_bundle_path(flavor);
-
-        analyze_android_package(&bundle_path);
         move_to_downloads(&bundle_path);
-
         return true;
     }
     false

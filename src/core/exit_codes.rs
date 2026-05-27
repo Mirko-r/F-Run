@@ -25,8 +25,5 @@ pub const IOERROR: ExitCode = 4;
 /// Impossibile eseguire il parse
 pub const PARSEERROR: ExitCode = 5;
 
-/// Errore legato alla UI
-pub const UIERROR: ExitCode = 6;
-
 /// Impossibile eseguire un comando
 pub const COMMANDERROR: ExitCode = 7;

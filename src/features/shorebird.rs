@@ -78,7 +78,7 @@ fn shorebird(release: bool, flavor: Option<&str>, cfg: &RwLockReadGuard<'static,
     let mut platforms: Vec<&str> = vec!["android"];
     let command: &str = if release { "release" } else { "patch" };
 
-    if cfg.ios.eabled {
+    if cfg.ios.enabled {
         platforms.push("ios");
     }
 

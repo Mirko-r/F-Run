@@ -7,4 +7,3 @@
 pub mod colors;
 pub mod menu_runner;
 pub mod printer;
-pub mod tui;
