@@ -121,42 +121,56 @@ fn slugify_key(value: &str) -> String {
 /// - `lang`: codice lingua trovato nei file JSON o nella configurazione.
 ///
 /// # Return
-/// Ritorna il codice lingua compatibile con `translators`, oppure `None` se non esiste un mapping noto.
-fn normalize_target_lang(lang: &str) -> Option<&str> {
-    match lang.to_ascii_lowercase().as_str() {
-        "it" => Some("it"),
-        "en" => Some("en"),
-        "fr" => Some("fr"),
-        "es" => Some("es"),
-        "de" => Some("de"),
-        "pt" | "pt_br" => Some("pt"),
-        "nl" => Some("nl"),
-        "sv" => Some("sv"),
-        "da" => Some("da"),
-        "fi" => Some("fi"),
-        "no" | "nb" => Some("no"),
-        "pl" => Some("pl"),
-        "cs" => Some("cs"),
-        "sk" => Some("sk"),
-        "sl" => Some("sl"),
-        "ro" => Some("ro"),
-        "hu" => Some("hu"),
-        "el" => Some("el"),
-        "tr" => Some("tr"),
-        "ru" => Some("ru"),
-        "uk" => Some("uk"),
-        "ar" => Some("ar"),
-        "he" => Some("he"),
-        "ja" => Some("ja"),
-        "ko" => Some("ko"),
-        "zh" | "zh_cn" => Some("zh-CN"),
-        "zh_tw" | "zh_hk" => Some("zh-TW"),
-        "hi" => Some("hi"),
-        "id" => Some("id"),
-        "vi" => Some("vi"),
-        "th" => Some("th"),
-        _ => None,
+/// Ritorna il codice lingua compatibile con il traduttore remoto, oppure `None` se non esiste un mapping noto.
+fn normalize_target_lang(lang: &str) -> Option<String> {
+    let normalized = lang.trim().replace('-', "_").to_ascii_lowercase();
+    if normalized.is_empty() {
+        return None;
     }
+
+    let mapped = match normalized.as_str() {
+        "pt_br" => "pt",
+        "zh_cn" | "zh_hans" => "zh-CN",
+        "zh_tw" | "zh_hk" | "zh_hant" => "zh-TW",
+        _ => {
+            let base = normalized.split('_').next().unwrap_or("");
+            match base {
+                "it" => "it",
+                "en" => "en",
+                "fr" => "fr",
+                "es" => "es",
+                "de" => "de",
+                "pt" => "pt",
+                "nl" => "nl",
+                "sv" => "sv",
+                "da" => "da",
+                "fi" => "fi",
+                "no" | "nb" => "no",
+                "pl" => "pl",
+                "cs" => "cs",
+                "sk" => "sk",
+                "sl" => "sl",
+                "ro" => "ro",
+                "hu" => "hu",
+                "el" => "el",
+                "tr" => "tr",
+                "ru" => "ru",
+                "uk" => "uk",
+                "ar" => "ar",
+                "he" => "he",
+                "ja" => "ja",
+                "ko" => "ko",
+                "zh" => "zh-CN",
+                "hi" => "hi",
+                "id" => "id",
+                "vi" => "vi",
+                "th" => "th",
+                _ => return None,
+            }
+        }
+    };
+
+    Some(mapped.to_string())
 }
 
 /// Scopre le lingue disponibili leggendo i file `.json` della cartella traduzioni.
@@ -534,8 +548,11 @@ fn collect_all_keys(all_lang_maps: &AllLangMaps, generated: &LangMap) -> BTreeSe
 /// # Return
 /// Ritorna il codice lingua da usare come base del sync.
 fn select_source_language(langs: &[String], all_lang_maps: &AllLangMaps) -> String {
-    if langs.iter().any(|lang| lang == "it") {
-        return "it".to_string();
+    if let Some(lang) = langs
+        .iter()
+        .find(|lang| normalize_target_lang(lang).as_deref() == Some("it"))
+    {
+        return lang.clone();
     }
 
     if let Some(lang) = langs.iter().find(|lang| {
@@ -688,8 +705,8 @@ fn translate_value(
 
     let cache_key = (
         source.value.clone(),
-        source_lang.to_string(),
-        target_lang.to_string(),
+        source_lang.clone(),
+        target_lang.clone(),
     );
     if let Some(cached) = translation_cache.get(&cache_key) {
         if let Some(pb) = progress_bar {
@@ -698,7 +715,7 @@ fn translate_value(
         return cached.clone();
     }
 
-    match network_client::google_translate(&source.value, source_lang, target_lang) {
+    match network_client::google_translate(&source.value, &source_lang, &target_lang) {
         Some(value) => {
             translation_cache.insert(cache_key, value.clone());
             if let Some(pb) = progress_bar {
@@ -816,6 +833,11 @@ fn replace_fr_strings_with_locale_keys(
     lib_dir: &Path,
     it_to_key: &BTreeMap<String, String>,
 ) -> usize {
+    let double_quoted_fr_re = Regex::new(r#"\"fr:((?:\\.|[^\"\\])+)\""#)
+        .expect("Regex replace fr: doppio apice non valida");
+    let single_quoted_fr_re = Regex::new(r#"'fr:((?:\\.|[^'\\])+)'"#)
+        .expect("Regex replace fr: singolo apice non valida");
+
     let mut dart_files = Vec::new();
     find_dart_files(lib_dir, &mut dart_files);
 
@@ -828,23 +850,59 @@ fn replace_fr_strings_with_locale_keys(
         let mut updated = content.clone();
         let mut replaced_in_file = 0_usize;
 
-        for (it_value, key) in it_to_key {
-            let double_quoted = format!("\"fr:{it_value}\"");
-            let single_quoted = format!("'fr:{it_value}'");
-            let replacement = format!("LocaleKeys.{key}.tr()");
+        let mut rebuilt = String::with_capacity(updated.len());
+        let mut last = 0_usize;
+        for captures in double_quoted_fr_re.captures_iter(&updated) {
+            let Some(full_match) = captures.get(0) else {
+                continue;
+            };
 
-            let count_double = updated.matches(&double_quoted).count();
-            if count_double > 0 {
-                updated = updated.replace(&double_quoted, &replacement);
-                replaced_in_file += count_double;
-            }
+            rebuilt.push_str(&updated[last..full_match.start()]);
 
-            let count_single = updated.matches(&single_quoted).count();
-            if count_single > 0 {
-                updated = updated.replace(&single_quoted, &replacement);
-                replaced_in_file += count_single;
-            }
+            let replacement = captures
+                .get(1)
+                .map(|m| normalize_it_source(m.as_str()))
+                .and_then(|normalized| it_to_key.get(&normalized))
+                .map_or_else(
+                    || full_match.as_str().to_string(),
+                    |key| {
+                        replaced_in_file += 1;
+                        format!("LocaleKeys.{key}.tr()")
+                    },
+                );
+
+            rebuilt.push_str(&replacement);
+            last = full_match.end();
         }
+        rebuilt.push_str(&updated[last..]);
+        updated = rebuilt;
+
+        let mut rebuilt = String::with_capacity(updated.len());
+        let mut last = 0_usize;
+        for captures in single_quoted_fr_re.captures_iter(&updated) {
+            let Some(full_match) = captures.get(0) else {
+                continue;
+            };
+
+            rebuilt.push_str(&updated[last..full_match.start()]);
+
+            let replacement = captures
+                .get(1)
+                .map(|m| normalize_it_source(m.as_str()))
+                .and_then(|normalized| it_to_key.get(&normalized))
+                .map_or_else(
+                    || full_match.as_str().to_string(),
+                    |key| {
+                        replaced_in_file += 1;
+                        format!("LocaleKeys.{key}.tr()")
+                    },
+                );
+
+            rebuilt.push_str(&replacement);
+            last = full_match.end();
+        }
+        rebuilt.push_str(&updated[last..]);
+        updated = rebuilt;
 
         if replaced_in_file > 0 && write(&file_path, updated).is_ok() {
             total_replaced += replaced_in_file;
